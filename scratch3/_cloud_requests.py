@@ -38,31 +38,21 @@ class CloudRequests:
 
 
         i = 0
-        while not remaining_response == "":
+        while remaining_response:
             if len(remaining_response) > limit:
                 response_part = remaining_response[:limit]
                 remaining_response = remaining_response[limit:]
 
                 i+=1
-                if i > 9:
-                    iteration_string = str(i)
-                else:
-                    iteration_string = "0"+str(i)
-
+                iteration_string = str(i) if i > 9 else f"0{i}"
                 self.connection.set_var(f"FROM_HOST_{self.current_var}", f"{response_part}.{request_id}{iteration_string}1")
-                self.current_var += 1
-                if self.current_var == 10:
-                    self.current_var = 1
-                time.sleep(0.1)
             else:
                 self.connection.set_var(f"FROM_HOST_{self.current_var}", f"{remaining_response}.{request_id}2222")
-                self.current_var += 1
-                if self.current_var == 10:
-                    self.current_var = 1
-
                 remaining_response = ""
-                time.sleep(0.1)
-
+            time.sleep(0.1)
+            self.current_var += 1
+            if self.current_var == 10:
+                self.current_var = 1
         self.idle_since = time.time()
 
 
@@ -76,9 +66,7 @@ class CloudRequests:
         self.last_timestamp = 0
 
         data = _cloud.get_cloud_logs(self.project_id, limit=100)
-        if data == []:
-            pass
-        else:
+        if data != []:
             self.last_timestamp = data[0]["timestamp"]
 
         try:
@@ -94,7 +82,7 @@ class CloudRequests:
             if data == []:
                 continue
             data.reverse()
-            if not self.last_data == data:
+            if self.last_data != data:
                 for activity in data:
                     if activity['timestamp'] > self.last_timestamp and activity['name'] == "☁ TO_HOST":
                         raw_request, request_id = activity["value"].split(".")
@@ -103,11 +91,9 @@ class CloudRequests:
                         request = arguments.pop(0)
                         output = ""
 
-                        commands = list(filter(lambda k: k.__name__ == request, self.requests))
-                        if len(commands) == 0:
-                            print(f"Warning: Client received an unknown request called '{request}'")
-                            self._respond(request_id, Encoding.encode(f"Error: Unknown request"), 220)
-                        else:
+                        if commands := list(
+                            filter(lambda k: k.__name__ == request, self.requests)
+                        ):
                             try:
                                 if len(arguments) == 0:
                                     output = commands[0]()
@@ -122,13 +108,23 @@ class CloudRequests:
                                 self._respond(request_id, Encoding.encode("Error: Client received too many arguments, not enough arguments or invalid arguments"), 220)
                                 print(f"Error in request '{request}': Client received too many arguments, not enough arguments or invalid arguments.\nOriginal error: {e}")
                             except Exception as e:
-                                self._respond(request_id, Encoding.encode(f"Error: Check the Python console"), 220)
+                                self._respond(
+                                    request_id,
+                                    Encoding.encode(
+                                        "Error: Check the Python console"
+                                    ),
+                                    220,
+                                )
+
                                 if self.ignore_exceptions:
                                     print(f"Caught error in request '{request}': {e}")
                                 else:
                                     print(f"Exception in request '{request}':")
                                     raise(e)
 
+                        else:
+                            print(f"Warning: Client received an unknown request called '{request}'")
+                            self._respond(request_id, Encoding.encode("Error: Unknown request"), 220)
                         if len(str(output)) > 3000:
                             print(f"Warning: Output of request '{request}' is longer than 3000 characters (length: {len(str(output))} characters). Responding the request will take >4 seconds.")
 

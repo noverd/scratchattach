@@ -85,29 +85,29 @@ class PartialProject:
                     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36',
                 }
             ).json()
-        projects = []
-        for project in _projects:
-            projects.append(Project(
-                author = project["author"]["username"],
-                comments_allowed = project["comments_allowed"],
+        return [
+            Project(
+                author=project["author"]["username"],
+                comments_allowed=project["comments_allowed"],
                 description=project["description"],
-                created = project["history"]["created"],
-                last_modified = project["history"]["modified"],
-                share_date = project["history"]["shared"],
-                id = project["id"],
-                thumbnail_url = project["image"],
-                instructions = project["instructions"],
-                remix_parent = project["remix"]["parent"],
-                remix_root = project["remix"]["root"],
-                favorites = project["stats"]["favorites"],
-                loves = project["stats"]["loves"],
-                remixes = project["stats"]["remixes"],
-                views = project["stats"]["views"],
-                title = project["title"],
-                url = "https://scratch.mit.edu/projects/" + str(project["id"]),
-                _session = self._session,
-            ))
-        return projects
+                created=project["history"]["created"],
+                last_modified=project["history"]["modified"],
+                share_date=project["history"]["shared"],
+                id=project["id"],
+                thumbnail_url=project["image"],
+                instructions=project["instructions"],
+                remix_parent=project["remix"]["parent"],
+                remix_root=project["remix"]["root"],
+                favorites=project["stats"]["favorites"],
+                loves=project["stats"]["loves"],
+                remixes=project["stats"]["remixes"],
+                views=project["stats"]["views"],
+                title=project["title"],
+                url="https://scratch.mit.edu/projects/" + str(project["id"]),
+                _session=self._session,
+            )
+            for project in _projects
+        ]
 
 
 
@@ -138,7 +138,7 @@ class Project(PartialProject):
             self.id = int(project["id"])
         except KeyError:
             pass
-        self.url = "https://scratch.mit.edu/projects/"+str(self.id)
+        self.url = f"https://scratch.mit.edu/projects/{self.id}"
         self.author = project["author"]["username"]
         self.comments_allowed = project["comments_allowed"]
         self.instructions = project["instructions"]
@@ -201,7 +201,6 @@ class Project(PartialProject):
     def love(self):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         r = requests.post(
             f"https://api.scratch.mit.edu/proxy/projects/{self.id}/loves/user/{self._session._username}",
             headers=self._headers,
@@ -213,38 +212,29 @@ class Project(PartialProject):
     def unlove(self):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         return requests.delete(
             f"https://api.scratch.mit.edu/proxy/projects/{self.id}/loves/user/{self._session._username}",
             headers = self._headers,
             cookies = self._cookies,
         ).json()
-        if r['userLove'] is True:
-            self.love()
 
     def favorite(self):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         return requests.post(
             f"https://api.scratch.mit.edu/proxy/projects/{self.id}/favorites/user/{self._session._username}",
             headers = self._headers,
             cookies = self._cookies,
         ).json()
-        if r['userFavorite'] is False:
-            self.love()
 
     def unfavorite(self):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         return requests.delete(
             f"https://api.scratch.mit.edu/proxy/projects/{self.id}/favorites/user/{self._session._username}",
             headers = self._headers,
             cookies = self._cookies,
         ).json()
-        if r['userFavorite'] is False:
-            self.love()
 
 
     def post_view(self):
@@ -256,10 +246,8 @@ class Project(PartialProject):
     def turn_off_commenting(self):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         if self._session._username != self.author:
             raise(_exceptions.Unauthorized)
-            return
         data = {
             "comments_allowed" : False
         }
@@ -273,10 +261,8 @@ class Project(PartialProject):
     def turn_on_commenting(self):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         if self._session._username != self.author:
             raise(_exceptions.Unauthorized)
-            return
         data = {
             "comments_allowed" : True
         }
@@ -292,10 +278,8 @@ class Project(PartialProject):
     def toggle_commenting(self):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         if self._session._username != self.author:
             raise(_exceptions.Unauthorized)
-            return
         data = {
             "comments_allowed" : not self.comments_allowed
         }
@@ -309,10 +293,8 @@ class Project(PartialProject):
     def share(self):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         if self._session._username != self.author:
             raise(_exceptions.Unauthorized)
-            return
         if self.shared is not True:
             requests.put(f"https://api.scratch.mit.edu/proxy/projects/{self.id}/share/",
                 headers = self._json_headers,
@@ -322,10 +304,8 @@ class Project(PartialProject):
     def unshare(self):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         if self._session._username != self.author:
             raise(_exceptions.Unauthorized)
-            return
         if self.shared is not False:
             requests.put(f"https://api.scratch.mit.edu/proxy/projects/{self.id}/unshare/",
                 headers = self._json_headers,
@@ -335,10 +315,8 @@ class Project(PartialProject):
     def set_thumbnail(self, *, file):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         if self._session._username != self.author:
             raise(_exceptions.Unauthorized)
-            return
         with open(file, "rb") as f:
             thumbnail = f.read()
         requests.post(
@@ -351,10 +329,8 @@ class Project(PartialProject):
     def delete_comment(self, *, comment_id):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         if self._session._username != self.author:
             raise(_exceptions.Unauthorized)
-            return
         return requests.delete(
             f"https://api.scratch.mit.edu/proxy/comments/project/{self.id}/comment/{comment_id}/",
             headers = self._headers,
@@ -364,7 +340,6 @@ class Project(PartialProject):
     def report_comment(self, *, comment_id):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         return requests.delete(
             f"https://api.scratch.mit.edu/proxy/comments/project/{self.id}/comment/{comment_id}/report",
             headers = self._headers,
@@ -374,14 +349,13 @@ class Project(PartialProject):
     def post_comment(self, content, *, parent_id="", commentee_id=""):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         data = {
             "commentee_id": commentee_id,
             "content": content,
             "parent_id": parent_id,
         }
         headers = self._json_headers
-        headers["referer"] = "https://scratch.mit.edu/projects/" + str(self.id) + "/"
+        headers["referer"] = f"https://scratch.mit.edu/projects/{str(self.id)}/"
         return json.loads(requests.post(
             f"https://api.scratch.mit.edu/proxy/comments/project/{self.id}/",
             headers = headers,
@@ -397,10 +371,8 @@ class Project(PartialProject):
     def set_title(self, text):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         if self._session._username != self.author:
             raise(_exceptions.Unauthorized)
-            return
         r = requests.put(f"https://api.scratch.mit.edu/projects/{self.id}",
             headers = self._headers,
             cookies = self._cookies,
@@ -410,10 +382,8 @@ class Project(PartialProject):
     def set_instructions(self, text):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         if self._session._username != self.author:
             raise(_exceptions.Unauthorized)
-            return
         r = requests.put(f"https://api.scratch.mit.edu/projects/{self.id}",
             headers = self._headers,
             cookies = self._cookies,
@@ -423,10 +393,8 @@ class Project(PartialProject):
     def set_notes(self, text):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         if self._session._username != self.author:
             raise(_exceptions.Unauthorized)
-            return
         r = requests.put(f"https://api.scratch.mit.edu/projects/{self.id}",
             headers = self._headers,
             cookies = self._cookies,

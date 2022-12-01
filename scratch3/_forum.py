@@ -38,14 +38,8 @@ class ForumTopic:
     def _update_from_dict(self, topic):
         self.title = topic["title"]
         self.category = topic["category"]
-        if topic["closed"] == 1:
-            self.closed = True
-        else:
-            self.closed = False
-        if topic["deleted"] == 1:
-            self.deleted = True
-        else:
-            self.deleted = False
+        self.closed = topic["closed"] == 1
+        self.deleted = topic["deleted"] == 1
         self.post_count = topic["post_count"]
 
     def activity(self):
@@ -53,10 +47,7 @@ class ForumTopic:
 
     def post_count_by_user(self, username):
         data = requests.get(f"https://scratchdb.lefty.one/v3/forum/topic/graph/{self.id}/{username}?segment=1&range=1").json()
-        if len(data) == 0:
-            return 0
-        else:
-            return data[0]["value"]
+        return 0 if len(data) == 0 else data[0]["value"]
 
     def posts(self, *, page=0, order="oldest"):
         data = requests.get(f"https://scratchdb.lefty.one/v3/forum/topic/posts/{self.id}/{page}?o={order}").json()
@@ -99,10 +90,7 @@ class ForumPost:
         self.posted = post["time"]["posted"]
         self.edited = post["time"]["edited"]
         self.edited_by = post["editor"]
-        if post["deleted"] == 1:
-            self.deleted = True
-        else:
-            self.deleted = False
+        self.deleted = post["deleted"] == 1
         self.html_content = post["content"]["html"]
         self.bb_content = post["content"]["bb"]
         self.topic_id = post["topic"]["id"]
@@ -166,10 +154,7 @@ def get_topic(topic_id):
 
 def get_topic_list(category_name, *, page=0, include_deleted=False):
     category_name.replace(" ", "%20")
-    if include_deleted:
-        filter = 0
-    else:
-        filter = 1
+    filter = 0 if include_deleted else 1
     try:
         data = requests.get(f"https://scratchdb.lefty.one/v3/forum/category/topics/{category_name}/{page}?detail=1&filter={filter}").json()
         return_data = []

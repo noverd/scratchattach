@@ -113,14 +113,13 @@ class Studio:
     def post_comment(self, content, *, parent_id="", commentee_id=""):
         if self._headers is None:
             raise(_exceptions.Unauthenticated)
-            return
         data = {
             "commentee_id": commentee_id,
             "content": content,
             "parent_id": parent_id,
         }
         headers = self._json_headers
-        headers["referer"] = "https://scratch.mit.edu/projects/" + str(self.id) + "/"
+        headers["referer"] = f"https://scratch.mit.edu/projects/{str(self.id)}/"
         return json.loads(requests.post(
             f"https://api.scratch.mit.edu/proxy/comments/studio/{self.id}/",
             headers = headers,

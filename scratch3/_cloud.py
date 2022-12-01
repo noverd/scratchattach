@@ -39,10 +39,11 @@ class CloudConnection(_CloudMixin):
             self.websocket = websocket.WebSocket()
             self.websocket.connect(
                 "wss://clouddata.scratch.mit.edu",
-                cookie="scratchsessionsid=" + self._session_id + ";",
+                cookie=f"scratchsessionsid={self._session_id};",
                 origin="https://scratch.mit.edu",
                 enable_multithread=True,
             )
+
         except Exception:
             raise(_exceptions.ConnectionError)
 
@@ -61,12 +62,13 @@ class CloudConnection(_CloudMixin):
             self._send_packet(
                 {
                     "method": "set",
-                    "name": "☁ " + variable,
-                    "value": str(value),
+                    "name": f"☁ {variable}",
+                    "value": value,
                     "user": self._username,
                     "project_id": self.project_id,
                 }
             )
+
         except Exception as e:
             try:
                 self._handshake()
@@ -96,7 +98,7 @@ class TwCloudConnection(_CloudMixin):
 
     def get_var(self, variable):
         try:
-            variable = "☁ " + str(variable)
+            variable = f"☁ {str(variable)}"
             self.set_var('@scratchattach','0')
 
             result = []
@@ -104,19 +106,17 @@ class TwCloudConnection(_CloudMixin):
                 try:
                     result.append(json.loads(i))
                 except Exception: pass
-            if result == []:
-                return None
-            else:
+            if result != []:
                 for i in result:
                     if i['name'] == variable:
                         return i['value']
-                return None
+            return None
         except Exception as e:
             raise _exceptions.FetchError
 
     def get_cloud(self, variable):
         try:
-            variable = "☁ " + str(variable)
+            variable = f"☁ {str(variable)}"
             self.set_var('@scratchattach','0')
 
             result = []
@@ -124,13 +124,7 @@ class TwCloudConnection(_CloudMixin):
                 try:
                     result.append(json.loads(i))
                 except Exception: pass
-            data = {}
-            if result == []:
-                return {}
-            else:
-                for item in result:
-                    data[item["name"]] = item["value"]
-                return data
+            return {item["name"]: item["value"] for item in result} if result else {}
         except Exception as e:
             raise _exceptions.FetchError
 
@@ -147,12 +141,13 @@ class TwCloudConnection(_CloudMixin):
             self._send_packet(
                 {
                     "method": "set",
-                    "name": "☁ " + variable,
-                    "value": str(value),
+                    "name": f"☁ {variable}",
+                    "value": value,
                     "user": self._username,
                     "project_id": self.project_id,
                 }
             )
+
             self._clouddata = self.websocket.recv().split('\n')
         except Exception as e:
             print(e)
@@ -191,17 +186,16 @@ class CloudEvents:
 
     def _update(self):
         while True:
-            if self.running:
-                data = get_cloud_logs(project_id = self.project_id, limit = 15)
-                if data != self.data:
-                    for activity in data:
-                        if activity in self.data:
-                            break
-                        if "on_"+activity["verb"][:-4] in self._events:
-                            self._events["on_"+activity["verb"][:-4]](self.Event(user=activity["user"], var=activity["name"][2:], name=activity["name"][2:], value=activity["value"], timestamp=activity["timestamp"]))
-                self.data = data
-            else:
+            if not self.running:
                 return
+            data = get_cloud_logs(project_id = self.project_id, limit = 15)
+            if data != self.data:
+                for activity in data:
+                    if activity in self.data:
+                        break
+                    if "on_"+activity["verb"][:-4] in self._events:
+                        self._events["on_"+activity["verb"][:-4]](self.Event(user=activity["user"], var=activity["name"][2:], name=activity["name"][2:], value=activity["value"], timestamp=activity["timestamp"]))
+            self.data = data
             time.sleep(self.update_interval)
 
     def stop(self):
@@ -242,21 +236,15 @@ def get_cloud(project_id):
     try:
         response = json.loads(requests.get(f"https://clouddata.scratch.mit.edu/logs?projectid={project_id}&limit=100&offset=0").text)
         response.reverse()
-        clouddata = {}
-        for activity in response:
-            clouddata[activity["name"][2:]] = activity["value"]
-        return clouddata
+        return {activity["name"][2:]: activity["value"] for activity in response}
     except Exception:
         return []
 
 def get_var(project_id, variable):
     try:
         response = json.loads(requests.get(f"https://clouddata.scratch.mit.edu/logs?projectid={project_id}&limit=100&offset=0").text)
-        response = list(filter(lambda k: k["name"] == "☁ "+variable, response))
-        if response == []:
-            return None
-        else:
-            return response[0]["value"]
+        response = list(filter(lambda k: k["name"] == f"☁ {variable}", response))
+        return response[0]["value"] if response else None
     except Exception:
         return []
 
@@ -265,6 +253,11 @@ def get_cloud_logs(project_id, *, filter_by_var_named =None, limit=25, offset=0)
         response = json.loads(requests.get(f"https://clouddata.scratch.mit.edu/logs?projectid={project_id}&limit={limit}&offset={offset}").text)
         if filter_by_var_named is None: return response
         else:
-            return list(filter(lambda k: k["name"] == "☁ "+filter_by_var_named, response))
+            return list(
+                filter(
+                    lambda k: k["name"] == f"☁ {filter_by_var_named}", response
+                )
+            )
+
     except Exception:
         return []

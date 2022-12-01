@@ -115,18 +115,21 @@ class User:
         followers = []
         response = requests.get(
             f"https://api.scratch.mit.edu/users/{self.username}/followers/?limit={limit}&offset={offset}").json()
-        while not len(response) == 0 and not len(followers) > limit:
-            for follower in response:
-                followers.append(User(
-                    id = follower["id"],
-                    name = follower["username"],
-                    scratchteam = follower["scratchteam"],
-                    join_date = follower["history"]["joined"],
-                    icon_url = follower["profile"]["images"]["90x90"],
-                    status = follower["profile"]["status"],
-                    bio = follower["profile"]["bio"],
-                    country = follower["profile"]["country"]
-                ))
+        while len(response) != 0 and len(followers) <= limit:
+            followers.extend(
+                User(
+                    id=follower["id"],
+                    name=follower["username"],
+                    scratchteam=follower["scratchteam"],
+                    join_date=follower["history"]["joined"],
+                    icon_url=follower["profile"]["images"]["90x90"],
+                    status=follower["profile"]["status"],
+                    bio=follower["profile"]["bio"],
+                    country=follower["profile"]["country"],
+                )
+                for follower in response
+            )
+
             if len(followers) == limit:
                 break
         return followers
@@ -135,18 +138,21 @@ class User:
         following = []
         response = requests.get(
             f"https://api.scratch.mit.edu/users/{self.username}/following/?limit={limit}&offset={offset}").json()
-        while not len(response) == 0 and not len(following) > limit:
-            for following_user in response:
-                following.append(User(
-                    id = following_user["id"],
-                    name = following_user["username"],
-                    scratchteam = following_user["scratchteam"],
-                    join_date = following_user["history"]["joined"],
-                    icon_url = following_user["profile"]["images"]["90x90"],
-                    status = following_user["profile"]["status"],
-                    bio = following_user["profile"]["bio"],
-                    country = following_user["profile"]["country"]
-                ))
+        while len(response) != 0 and len(following) <= limit:
+            following.extend(
+                User(
+                    id=following_user["id"],
+                    name=following_user["username"],
+                    scratchteam=following_user["scratchteam"],
+                    join_date=following_user["history"]["joined"],
+                    icon_url=following_user["profile"]["images"]["90x90"],
+                    status=following_user["profile"]["status"],
+                    bio=following_user["profile"]["bio"],
+                    country=following_user["profile"]["country"],
+                )
+                for following_user in response
+            )
+
             if len(following) == limit:
                 break
         return following
@@ -246,29 +252,29 @@ class User:
                     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36',
                 }
             ).json()
-        projects = []
-        for project in _projects:
-            projects.append(_project.Project(
-                _session = self._session,
-                author = self.username,
-                comments_allowed = project["comments_allowed"],
+        return [
+            _project.Project(
+                _session=self._session,
+                author=self.username,
+                comments_allowed=project["comments_allowed"],
                 description=project["description"],
-                created = project["history"]["created"],
-                last_modified = project["history"]["modified"],
-                share_date = project["history"]["shared"],
-                id = project["id"],
-                thumbnail_url = project["image"],
-                instructions = project["instructions"],
-                remix_parent = project["remix"]["parent"],
-                remix_root = project["remix"]["root"],
-                favorites = project["stats"]["favorites"],
-                loves = project["stats"]["loves"],
-                remixes = project["stats"]["remixes"],
-                views = project["stats"]["views"],
-                title = project["title"],
-                url = "https://scratch.mit.edu/projects/"+str(project["id"])
-            ))
-        return projects
+                created=project["history"]["created"],
+                last_modified=project["history"]["modified"],
+                share_date=project["history"]["shared"],
+                id=project["id"],
+                thumbnail_url=project["image"],
+                instructions=project["instructions"],
+                remix_parent=project["remix"]["parent"],
+                remix_root=project["remix"]["root"],
+                favorites=project["stats"]["favorites"],
+                loves=project["stats"]["loves"],
+                remixes=project["stats"]["remixes"],
+                views=project["stats"]["views"],
+                title=project["title"],
+                url="https://scratch.mit.edu/projects/" + str(project["id"]),
+            )
+            for project in _projects
+        ]
 
     def favorites(self, *, limit=None, offset=0):
         if limit is None:
@@ -293,29 +299,29 @@ class User:
                     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36',
                 }
             ).json()
-        projects = []
-        for project in _projects:
-            projects.append(_project.Project(
-                _session = self._session,
-                author = self.username,
-                comments_allowed = project["comments_allowed"],
+        return [
+            _project.Project(
+                _session=self._session,
+                author=self.username,
+                comments_allowed=project["comments_allowed"],
                 description=project["description"],
-                created = project["history"]["created"],
-                last_modified = project["history"]["modified"],
-                share_date = project["history"]["shared"],
-                id = project["id"],
-                thumbnail_url = project["image"],
-                instructions = project["instructions"],
-                remix_parent = project["remix"]["parent"],
-                remix_root = project["remix"]["root"],
-                favorites = project["stats"]["favorites"],
-                loves = project["stats"]["loves"],
-                remixes = project["stats"]["remixes"],
-                views = project["stats"]["views"],
-                title = project["title"],
-                url = "https://scratch.mit.edu/projects/"+str(project["id"])
-            ))
-        return projects
+                created=project["history"]["created"],
+                last_modified=project["history"]["modified"],
+                share_date=project["history"]["shared"],
+                id=project["id"],
+                thumbnail_url=project["image"],
+                instructions=project["instructions"],
+                remix_parent=project["remix"]["parent"],
+                remix_root=project["remix"]["root"],
+                favorites=project["stats"]["favorites"],
+                loves=project["stats"]["loves"],
+                remixes=project["stats"]["remixes"],
+                views=project["stats"]["views"],
+                title=project["title"],
+                url="https://scratch.mit.edu/projects/" + str(project["id"]),
+            )
+            for project in _projects
+        ]
 
     def favorites_count(self):
         text = requests.get(
@@ -344,29 +350,30 @@ class User:
                 f"https://api.scratch.mit.edu/users/{self.username}/projects/recentlyviewed?limit={limit}&offset={offset}",
                 headers = self._headers
             ).json()
-            projects = []
-            for project in _projects:
-                projects.append(_project.Project(
-                    _session = self._session,
-                    author = self.username,
-                    comments_allowed = project["comments_allowed"],
+            return [
+                _project.Project(
+                    _session=self._session,
+                    author=self.username,
+                    comments_allowed=project["comments_allowed"],
                     description=project["description"],
-                    created = project["history"]["created"],
-                    last_modified = project["history"]["modified"],
-                    share_date = project["history"]["shared"],
-                    id = project["id"],
-                    thumbnail_url = project["image"],
-                    instructions = project["instructions"],
-                    remix_parent = project["remix"]["parent"],
-                    remix_root = project["remix"]["root"],
-                    favorites = project["stats"]["favorites"],
-                    loves = project["stats"]["loves"],
-                    remixes = project["stats"]["remixes"],
-                    views = project["stats"]["views"],
-                    title = project["title"],
-                    url = "https://scratch.mit.edu/projects/"+str(project["id"])
-                ))
-            return projects
+                    created=project["history"]["created"],
+                    last_modified=project["history"]["modified"],
+                    share_date=project["history"]["shared"],
+                    id=project["id"],
+                    thumbnail_url=project["image"],
+                    instructions=project["instructions"],
+                    remix_parent=project["remix"]["parent"],
+                    remix_root=project["remix"]["root"],
+                    favorites=project["stats"]["favorites"],
+                    loves=project["stats"]["loves"],
+                    remixes=project["stats"]["remixes"],
+                    views=project["stats"]["views"],
+                    title=project["title"],
+                    url="https://scratch.mit.edu/projects/" + str(project["id"]),
+                )
+                for project in _projects
+            ]
+
         except Exception:
             raise(_exceptions.Unauthorized)
 

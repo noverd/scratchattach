@@ -82,7 +82,7 @@ class Session():
     def get_linked_user(self):
 
         #this will fetch the user who is associated to the session
-        if not "_user" in self.__dict__:
+        if "_user" not in self.__dict__:
             self._user = self.connect_user(self._username)
         return self._user
 
@@ -97,28 +97,27 @@ class Session():
             headers = headers,
             cookies = self._cookies,
         ).json()
-        projects = []
-        for target in targets:
-            projects.append(
-                dict(
-                    author = self._username,
-                    created = target["fields"]["datetime_created"],
-                    last_modified = target["fields"]["datetime_modified"],
-                    share_date = target["fields"]["datetime_shared"],
-                    shared = target["fields"]["isPublished"],
-                    id = target["pk"],
-                    thumbnail_url = "https://uploads.scratch.mit.edu"+target["fields"]["uncached_thumbnail_url"][1:],
-                    favorites = target["fields"]["favorite_count"],
-                    loves = target["fields"]["love_count"],
-                    remixes = target["fields"]["remixers_count"],
-                    views = target["fields"]["view_count"],
-                    thumbnail_name = target["fields"]["thumbnail"],
-                    title = target["fields"]["title"],
-                    url = "https://scratch.mit.edu/projects/" + str(target["pk"]),
-                    comment_count = target["fields"]["commenters_count"],
-                )
+        return [
+            dict(
+                author=self._username,
+                created=target["fields"]["datetime_created"],
+                last_modified=target["fields"]["datetime_modified"],
+                share_date=target["fields"]["datetime_shared"],
+                shared=target["fields"]["isPublished"],
+                id=target["pk"],
+                thumbnail_url="https://uploads.scratch.mit.edu"
+                + target["fields"]["uncached_thumbnail_url"][1:],
+                favorites=target["fields"]["favorite_count"],
+                loves=target["fields"]["love_count"],
+                remixes=target["fields"]["remixers_count"],
+                views=target["fields"]["view_count"],
+                thumbnail_name=target["fields"]["thumbnail"],
+                title=target["fields"]["title"],
+                url="https://scratch.mit.edu/projects/" + str(target["pk"]),
+                comment_count=target["fields"]["commenters_count"],
             )
-        return projects
+            for target in targets
+        ]
 
     def messages(self, *, limit=40, offset=0):
 
@@ -281,10 +280,7 @@ class Session():
 
     def connect_topic_list(self, category_name, *, page=0, include_deleted=False):
         category_name.replace(" ", "%20")
-        if include_deleted:
-            filter = 0
-        else:
-            filter = 1
+        filter = 0 if include_deleted else 1
         try:
             data = requests.get(f"https://scratchdb.lefty.one/v3/forum/category/topics/{category_name}/{page}?detail=1&filter={filter}").json()
             return_data = []
@@ -335,8 +331,7 @@ def login(username, password):
     except Exception:
         print("Failed to login. Either the provided authentication data is wrong or your network is banned from Scratch.")
         raise(_exceptions.LoginFailure)
-    session = Session(session_id, username=username)
-    return session
+    return Session(session_id, username=username)
 
 
 def get_news(*, limit=10, offset=0):
@@ -419,10 +414,7 @@ def country_counts():
 
 def age_distribution():
     data = requests.get("https://scratch.mit.edu/statistics/data/monthly/").json()["age_distribution_data"][0]["values"]
-    return_data = {}
-    for value in data:
-        return_data[value["x"]] = value["y"]
-    return return_data
+    return {value["x"]: value["y"] for value in data}
 
 def get_health():
     return requests.get("https://api.scratch.mit.edu/health").json()

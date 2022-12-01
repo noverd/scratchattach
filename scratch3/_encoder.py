@@ -108,20 +108,20 @@ class Encoding:
     """
     Inner class for encoding / decoding strings.
     """
-    def decode(inp):
-        inp = str(inp)
+    def decode(self):
+        self = str(self)
         outp = ""
-        for i in range(0, math.floor(len(inp) / 2)):
-            letter = letters[int(f"{inp[i*2]}{inp[(i*2)+1]}")]
+        for i in range(math.floor(len(self) / 2)):
+            letter = letters[int(f"{self[i * 2]}{self[i * 2 + 1]}")]
             outp = f"{outp}{letter}"
         return outp
 
 
-    def encode(inp):
-        inp = str(inp)
+    def encode(self):
+        self = str(self)
         global encode_letters
         outp = ""
-        for i in inp:
+        for i in self:
             if i in letters:
                 outp = f"{outp}{letters.index(i)}"
             else:
